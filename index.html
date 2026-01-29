@@ -1,136 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Jedi Scroll - Control page scrolling with hand gestures using AI-powered hand tracking">
+    <meta name="description"
+        content="Jedi Scroll - Control page scrolling with hand gestures using AI-powered hand tracking">
     <title>Jedi Scroll PoC</title>
+
+    <!-- MediaPipe Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body { 
-            background: #111; 
-            color: #fff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            height: 200vh; 
-            overflow-y: scroll; 
-            scroll-behavior: smooth; 
-        }
-        
-        /* The floating cursor that follows your hand */
-        #cursor {
-            position: fixed; 
-            width: 20px; 
-            height: 20px; 
-            background: #00ffcc; 
-            border-radius: 50%; 
-            pointer-events: none; 
-            z-index: 9999; 
-            display: none;
-            box-shadow: 0 0 15px #00ffcc;
-            transform: translate(-50%, -50%);
-            transition: transform 0.1s ease-out;
-        }
-
-        /* Status box */
-        #status-box {
-            position: fixed; 
-            top: 20px; 
-            right: 20px;
-            background: rgba(0,0,0,0.8); 
-            border: 1px solid #333;
-            padding: 15px; 
-            border-radius: 8px; 
-            text-align: left;
-            z-index: 100;
-            backdrop-filter: blur(10px);
-        }
-
-        #status-box h3 {
-            margin: 0 0 10px 0; 
-            color: #00ffcc;
-        }
-
-        #status-box small {
-            color: #888;
-            line-height: 1.6;
-        }
-
-        /* Content spacing */
-        .section { 
-            height: 80vh; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            border-bottom: 1px solid #333; 
-            font-size: 2rem; 
-            gap: 1rem;
-        }
-
-        .section:nth-child(odd) {
-            background: linear-gradient(135deg, rgba(0,255,204,0.05) 0%, transparent 100%);
-        }
-
-        .section p {
-            font-size: 1rem;
-            color: #888;
-            max-width: 400px;
-        }
-
-        /* Scroll zones indicator */
-        .scroll-zone {
-            position: fixed;
-            left: 0;
-            right: 0;
-            height: 20vh;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 50;
-        }
-
-        .scroll-zone.top {
-            top: 0;
-            background: linear-gradient(to bottom, rgba(0,255,204,0.2), transparent);
-        }
-
-        .scroll-zone.bottom {
-            bottom: 0;
-            background: linear-gradient(to top, rgba(0,255,204,0.2), transparent);
-        }
-
-        .scroll-zone.active {
-            opacity: 1;
-        }
-    </style>
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
 
+<body>
+    <!-- Hand Tracking Cursor -->
     <div id="cursor"></div>
 
-    <!-- Scroll zone indicators -->
+    <!-- Scroll Zone Indicators -->
     <div class="scroll-zone top" id="zone-top"></div>
     <div class="scroll-zone bottom" id="zone-bottom"></div>
 
+    <!-- Status Panel -->
     <div id="status-box">
         <h3>✋ Gesture Control</h3>
         <div id="status">Loading AI Model...</div>
         <small>1. Allow Camera Access<br>2. Raise hand to scroll</small>
     </div>
 
-    <video id="input_video" style="display:none"></video>
+    <!-- Hidden Video Element for Camera Feed -->
+    <video id="input_video"></video>
 
+    <!-- Content Sections -->
     <div class="section">
         <span>👋 Wave your hand!</span>
         <p>Move your hand to the top or bottom of the screen to scroll</p>
@@ -148,85 +56,8 @@
         <p>Let's build something amazing together</p>
     </div>
 
-    <script>
-        const videoElement = document.getElementById('input_video');
-        const cursor = document.getElementById('cursor');
-        const statusText = document.getElementById('status');
-        const zoneTop = document.getElementById('zone-top');
-        const zoneBottom = document.getElementById('zone-bottom');
-        
-        // 1. Setup MediaPipe Hands
-        const hands = new Hands({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-        }});
-
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
-
-        hands.onResults(onResults);
-
-        // 2. The Logic Loop
-        function onResults(results) {
-            // Reset zone indicators
-            zoneTop.classList.remove('active');
-            zoneBottom.classList.remove('active');
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                statusText.innerText = "System Active: Tracking Hand";
-                statusText.style.color = "#00ffcc";
-
-                const landmarks = results.multiHandLandmarks[0];
-                
-                // Track Index Finger Tip (Landmark #8)
-                const indexTip = landmarks[8];
-
-                // Flip X coords because webcam is mirrored
-                const x = (1 - indexTip.x) * window.innerWidth;
-                const y = indexTip.y * window.innerHeight;
-
-                // Move Visual Cursor
-                cursor.style.display = "block";
-                cursor.style.left = `${x}px`;
-                cursor.style.top = `${y}px`;
-
-                // --- SCROLL LOGIC ---
-                // If hand is in the TOP 20% of screen -> Scroll UP
-                if (indexTip.y < 0.2) {
-                    window.scrollBy(0, -15);
-                    statusText.innerText = "⬆️ Scrolling UP";
-                    zoneTop.classList.add('active');
-                }
-                // If hand is in the BOTTOM 20% of screen -> Scroll DOWN
-                else if (indexTip.y > 0.8) {
-                    window.scrollBy(0, 15);
-                    statusText.innerText = "⬇️ Scrolling DOWN";
-                    zoneBottom.classList.add('active');
-                } 
-                else {
-                    statusText.innerText = "✋ Hand Detected (Center)";
-                }
-
-            } else {
-                statusText.innerText = "Waiting for hand...";
-                statusText.style.color = "#fff";
-                cursor.style.display = "none";
-            }
-        }
-
-        // 3. Start Camera
-        const camera = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 640,
-            height: 480
-        });
-        camera.start();
-
-        // Log when camera starts
-        console.log('🎥 Camera starting...');
-    </script>
+    <!-- Application Logic -->
+    <script src="js/app.js"></script>
 </body>
+
 </html>

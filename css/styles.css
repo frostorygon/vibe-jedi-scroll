@@ -1,0 +1,136 @@
+/* ===========================================
+   Jedi Scroll - Styles
+   =========================================== */
+
+/* Reset & Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --color-bg: #111;
+    --color-text: #fff;
+    --color-accent: #00ffcc;
+    --color-muted: #888;
+    --color-border: #333;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body { 
+    background: var(--color-bg); 
+    color: var(--color-text); 
+    font-family: var(--font-family); 
+    text-align: center; 
+    height: 200vh; 
+    overflow-y: scroll; 
+    scroll-behavior: smooth; 
+}
+
+/* ===========================================
+   Hand Cursor
+   =========================================== */
+#cursor {
+    position: fixed; 
+    width: 20px; 
+    height: 20px; 
+    background: var(--color-accent); 
+    border-radius: 50%; 
+    pointer-events: none; 
+    z-index: 9999; 
+    display: none;
+    box-shadow: 0 0 15px var(--color-accent);
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease-out;
+}
+
+/* ===========================================
+   Status Box
+   =========================================== */
+#status-box {
+    position: fixed; 
+    top: 20px; 
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8); 
+    border: 1px solid var(--color-border);
+    padding: 15px; 
+    border-radius: 8px; 
+    text-align: left;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+#status-box h3 {
+    margin: 0 0 10px 0; 
+    color: var(--color-accent);
+}
+
+#status-box small {
+    color: var(--color-muted);
+    line-height: 1.6;
+}
+
+#status {
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+/* ===========================================
+   Content Sections
+   =========================================== */
+.section { 
+    height: 80vh; 
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center; 
+    border-bottom: 1px solid var(--color-border); 
+    font-size: 2rem; 
+    gap: 1rem;
+}
+
+.section:nth-child(odd) {
+    background: linear-gradient(135deg, rgba(0, 255, 204, 0.05) 0%, transparent 100%);
+}
+
+.section p {
+    font-size: 1rem;
+    color: var(--color-muted);
+    max-width: 400px;
+}
+
+/* ===========================================
+   Scroll Zone Indicators
+   =========================================== */
+.scroll-zone {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 20vh;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 50;
+}
+
+.scroll-zone.top {
+    top: 0;
+    background: linear-gradient(to bottom, rgba(0, 255, 204, 0.2), transparent);
+}
+
+.scroll-zone.bottom {
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0, 255, 204, 0.2), transparent);
+}
+
+.scroll-zone.active {
+    opacity: 1;
+}
+
+/* ===========================================
+   Hidden Elements
+   =========================================== */
+#input_video {
+    display: none;
+}
